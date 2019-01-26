@@ -3,6 +3,11 @@ library(RDCOMClient)
 setwd("~/Data/Datasets")
 mail_list <- read.csv("mail_list.csv", header=TRUE, stringsAsFactors = FALSE)
 mail_list
+
+library(readr)
+
+body <- read_file("html_body.txt")
+body
 # Open Outlook
 Outlook <- COMCreate("Outlook.Application")
 
@@ -15,15 +20,11 @@ for (recipient in 1:nrow(mail_list)) {
   Email[["SentOnBehalfOfName"]] = ""
   Email[["bcc"]] = ""
   Email[["subject"]] = "Test"
-  Email[["htmlbody"]] =
-  "<h1>This is a test</h1>
-  <p>Link to google/bookmarks</p>
-  <a href='https://www.w3schools.com/html/'>Visit our HTML tutorial</a>
-  <img src='http://www.resultspad.net/pexels-photo-1036623.jpeg'>
-"
-
+  Email[["htmlbody"]] = body
+ 
 # Send the message
 Email$Send()
+print(mail_list$To[recipient])
 }
 # Close Outlook, clear the message
 rm(Outlook, Email)
