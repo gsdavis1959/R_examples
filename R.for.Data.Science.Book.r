@@ -4,6 +4,12 @@ library(gapminder)
 library(Lahman)
 library(stringr)
 library(forcats)
+library(splines)
+library(modelr)
+library(lubridate)
+library(magrittr)
+
+
 # tidyverse_update()
 # simple plot
 ggplot(data = mpg) + 
@@ -453,6 +459,12 @@ ggplot(data = smaller, mapping = aes(x = carat, colour = cut)) +
   geom_freqpoly(binwidth = 0.1)
 ggplot(data = smaller, mapping = aes(x = carat)) +
   geom_histogram(binwidth = 0.01)
+
+# reverse scale
+ggplot(aes(x=price), data=diamonds) +
+  geom_histogram() +
+  scale_y_reverse()
+
 # histogram of old faithful
 ggplot(data = faithful, mapping = aes(x = eruptions)) + 
   geom_histogram(binwidth = 0.25)
@@ -532,7 +544,7 @@ ggplot(data = diamonds) +
 ggplot(data = faithful) + 
   geom_point(mapping = aes(x = eruptions, y = waiting))
 # model the relationships
-library(modelr)
+
 
 mod <- lm(log(price) ~ log(carat), data = diamonds)
 
@@ -666,7 +678,7 @@ treatment %>%
   fill(person)
 # messy table
 who
-# remove missing values
+# remove missing values ######### first part includes the columns you want in the key column
 who1 <- who %>% 
   gather(new_sp_m014:newrel_f65, key = "key", value = "cases", na.rm = TRUE)
 who1
@@ -1001,7 +1013,7 @@ gss_cat %>%
   count(relig, sort = TRUE) %>%
   print(n = Inf)
 # dates and times
-library(lubridate)
+
 today()
 now()
 ymd("2017-01-31")
@@ -1160,7 +1172,7 @@ head(OlsonNames())
 (x3 <- ymd_hms("2015-06-02 04:00:00", tz = "Pacific/Auckland"))
 
 # pipes
-library(magrittr)
+
 
 diamonds <- ggplot2::diamonds
 diamonds2 <- diamonds %>% 
@@ -1458,7 +1470,7 @@ df <- tribble(
   3,  3
 )
 model_matrix(df, y ~ poly(x, 2))
-library(splines)
+
 model_matrix(df, y ~ ns(x, 2))
 sim5 <- tibble(
   x = seq(0, 3.5 * pi, length = 50),
@@ -1482,3 +1494,428 @@ ggplot(sim5, aes(x, y)) +
   geom_point() +
   geom_line(data = grid, colour = "red") +
   facet_wrap(~ model)
+
+# model building
+diamonds2 <- diamonds %>% 
+  filter(carat <= 2.5) %>% 
+  mutate(lprice = log2(price), lcarat = log2(carat))
+ggplot(diamonds2, aes(lcarat, lprice)) + 
+  geom_hex(bins = 50)
+mod_diamond <- lm(lprice ~ lcarat, data = diamonds2)
+
+grid <- diamonds2 %>% 
+  data_grid(carat = seq_range(carat, 20)) %>% 
+  mutate(lcarat = log2(carat)) %>% 
+  add_predictions(mod_diamond, "lprice") %>% 
+  mutate(price = 2 ^ lprice)
+grid
+ggplot(diamonds2, aes(carat, price)) + 
+  geom_hex(bins = 50) + 
+  geom_line(data = grid, colour = "red", size = 1)
+# residuals
+diamonds2 <- diamonds2 %>% 
+  add_residuals(mod_diamond, "lresid")
+
+ggplot(diamonds2, aes(lcarat, lresid)) + 
+  geom_hex(bins = 50)
+ggplot(diamonds2, aes(cut, lresid)) + geom_boxplot()
+ggplot(diamonds2, aes(color, lresid)) + geom_boxplot()
+ggplot(diamonds2, aes(clarity, lresid)) + geom_boxplot()
+
+mod_diamond2 <- lm(lprice ~ lcarat + color + cut + clarity, data = diamonds2)
+mod_diamond2
+# this isn't working - object 'lcarat' not found
+grid <- diamonds2 %>% 
+  data_grid(cut, .model = mod_diamond2) %>% 
+  add_predictions(mod_diamond2)
+grid
+
+ggplot(grid, aes(cut, pred)) + 
+  geom_point()
+
+diamonds2 <- diamonds2 %>% 
+  add_residuals(mod_diamond2, "lresid2")
+
+ggplot(diamonds2, aes(lcarat, lresid2)) + 
+  geom_hex(bins = 50)
+diamonds2 %>% 
+  filter(abs(lresid2) > 1) %>% 
+  add_predictions(mod_diamond2) %>% 
+  mutate(pred = round(2 ^ pred)) %>% 
+  select(price, pred, carat:table, x:z) %>% 
+  arrange(price)
+# flights model
+daily <- flights %>% 
+  mutate(date = make_date(year, month, day)) %>% 
+  group_by(date) %>% 
+  summarise(n = n())
+daily
+ggplot(daily, aes(date, n)) + 
+  geom_line()
+daily <- daily %>% 
+  mutate(wday = wday(date, label = TRUE))
+ggplot(daily, aes(wday, n)) + 
+  geom_boxplot()
+mod <- lm(n ~ wday, data = daily)
+
+grid <- daily %>% 
+  data_grid(wday) %>% 
+  add_predictions(mod, "n")
+
+ggplot(daily, aes(wday, n)) + 
+  geom_boxplot() +
+  geom_point(data = grid, colour = "red", size = 4)
+
+daily <- daily %>% 
+  add_residuals(mod)
+daily %>% 
+  ggplot(aes(date, resid)) + 
+  geom_ref_line(h = 0) + 
+  geom_line()
+
+ggplot(daily, aes(date, resid, colour = wday)) + 
+  geom_ref_line(h = 0) + 
+  geom_line()
+daily %>% 
+  filter(resid < -100)
+daily %>% 
+  ggplot(aes(date, resid)) + 
+  geom_ref_line(h = 0) + 
+  geom_line(colour = "grey50") + 
+  geom_smooth(se = FALSE, span = 0.20)
+
+daily %>% 
+  filter(wday == "Sat") %>% 
+  ggplot(aes(date, n)) + 
+  geom_point() + 
+  geom_line() +
+  scale_x_date(NULL, date_breaks = "1 month", date_labels = "%b")
+term <- function(date) {
+  cut(date, 
+      breaks = ymd(20130101, 20130605, 20130825, 20140101),
+      labels = c("spring", "summer", "fall") 
+  )
+}
+
+daily <- daily %>% 
+  mutate(term = term(date)) 
+
+daily %>% 
+  filter(wday == "Sat") %>% 
+  ggplot(aes(date, n, colour = term)) +
+  geom_point(alpha = 1/3) + 
+  geom_line() +
+  scale_x_date(NULL, date_breaks = "1 month", date_labels = "%b")
+daily %>% 
+  ggplot(aes(wday, n, colour = term)) +
+  geom_boxplot()
+mod1 <- lm(n ~ wday, data = daily)
+mod2 <- lm(n ~ wday * term, data = daily)
+
+daily %>% 
+  gather_residuals(without_term = mod1, with_term = mod2) %>% 
+  ggplot(aes(date, resid, colour = model)) +
+  geom_line(alpha = 0.75)
+grid <- daily %>% 
+  data_grid(wday, term) %>% 
+  add_predictions(mod2, "n")
+
+ggplot(daily, aes(wday, n)) +
+  geom_boxplot() + 
+  geom_point(data = grid, colour = "red") + 
+  facet_wrap(~ term)
+# reduce the impact of outliers
+mod3 <- MASS::rlm(n ~ wday * term, data = daily)
+
+daily %>% 
+  add_residuals(mod3, "resid") %>% 
+  ggplot(aes(date, resid)) + 
+  geom_hline(yintercept = 0, size = 2, colour = "white") + 
+  geom_line()
+# function to compute variables
+compute_vars <- function(data) {
+  data %>% 
+    mutate(
+      term = term(date), 
+      wday = wday(date, label = TRUE)
+    )
+}
+wday2 <- function(x) wday(x, label = TRUE)
+mod3 <- lm(n ~ wday2(date) * term(date), data = daily)
+mod <- MASS::rlm(n ~ wday * ns(date, 5), data = daily)
+
+daily %>% 
+  data_grid(wday, date = seq_range(date, n = 13)) %>% 
+  add_predictions(mod) %>% 
+  ggplot(aes(date, pred, colour = wday)) + 
+  geom_line() +
+  geom_point()
+# many models
+gapminder
+gapminder %>% 
+  ggplot(aes(year, lifeExp, group = country)) +
+  geom_line(alpha = 1/3)
+nz <- filter(gapminder, country == "New Zealand")
+nz %>% 
+  ggplot(aes(year, lifeExp)) + 
+  geom_line() + 
+  ggtitle("Full data = ")
+
+nz_mod <- lm(lifeExp ~ year, data = nz)
+nz %>% 
+  add_predictions(nz_mod) %>%
+  ggplot(aes(year, pred)) + 
+  geom_line() + 
+  ggtitle("Linear trend + ")
+
+nz %>% 
+  add_residuals(nz_mod) %>% 
+  ggplot(aes(year, resid)) + 
+  geom_hline(yintercept = 0, colour = "white", size = 3) + 
+  geom_line() + 
+  ggtitle("Remaining pattern")
+by_country <- gapminder %>% 
+  group_by(country, continent) %>% 
+  nest()
+
+by_country
+by_country$data[[1]]
+
+country_model <- function(df) {
+  lm(lifeExp ~ year, data = df)
+}
+models <- map(by_country$data, country_model)
+by_country <- by_country %>% 
+  mutate(model = map(data, country_model))
+by_country
+by_country %>% 
+  filter(continent == "Europe")
+by_country %>% 
+  arrange(continent, country)
+# unnesting
+by_country <- by_country %>% 
+  mutate(
+    resids = map2(data, model, add_residuals)
+  )
+by_country
+resids <- unnest(by_country, resids)
+resids
+resids %>% 
+  ggplot(aes(year, resid)) +
+  geom_line(aes(group = country), alpha = 1 / 3) + 
+  geom_smooth(se = FALSE)
+resids %>% 
+  ggplot(aes(year, resid, group = country)) +
+  geom_line(alpha = 1 / 3) + 
+  facet_wrap(~continent)
+# combine models
+broom::glance(nz_mod)
+by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance)
+glance <- by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance, .drop = TRUE)
+glance
+glance %>% 
+  arrange(r.squared)
+glance %>% 
+  ggplot(aes(continent, r.squared)) + 
+  geom_jitter(width = 0.5)
+# poor r squared
+bad_fit <- filter(glance, r.squared < 0.25)
+
+gapminder %>% 
+  semi_join(bad_fit, by = "country") %>% 
+  ggplot(aes(year, lifeExp, colour = country)) +
+  geom_line()
+
+# working with lists
+# nested list
+gapminder %>% 
+  group_by(country, continent) %>% 
+  nest()
+gapminder %>% 
+  nest(year:gdpPercap)
+# multivalued summaries
+mtcars %>% 
+  group_by(cyl) %>% 
+  summarise(q = list(quantile(mpg)))
+probs <- c(0.01, 0.25, 0.5, 0.75, 0.99)
+mtcars %>% 
+  group_by(cyl) %>% 
+  summarise(p = list(probs), q = list(quantile(mpg, probs))) %>% 
+  unnest()
+
+# Communication
+# Labels
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth(se = FALSE) +
+  labs(title = "Fuel efficiency generally decreases with engine size")
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth(se = FALSE) +
+  labs(
+    title = "Fuel efficiency generally decreases with engine size",
+    subtitle = "Two seaters (sports cars) are an exception because of their light weight",
+    caption = "Data from fueleconomy.gov"
+  )
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  geom_smooth(se = FALSE) +
+  labs(
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    colour = "Car type"
+  )
+df <- tibble(
+  x = runif(10),
+  y = runif(10)
+)
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  labs(
+    x = quote(sum(x[i] ^ 2, i == 1, n)),
+    y = quote(alpha + beta + frac(delta, theta))
+  )
+
+best_in_class <- mpg %>%
+  group_by(class) %>%
+  filter(row_number(desc(hwy)) == 1)
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  geom_label(aes(label = model), data = best_in_class, nudge_y = 2, alpha = 0.5)
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  geom_point(size = 3, shape = 1, data = best_in_class) +
+  ggrepel::geom_label_repel(aes(label = model), data = best_in_class)
+class_avg <- mpg %>%
+  group_by(class) %>%
+  summarise(
+    displ = median(displ),
+    hwy = median(hwy)
+  )
+
+ggplot(mpg, aes(displ, hwy, colour = class)) +
+  ggrepel::geom_label_repel(aes(label = class),
+                            data = class_avg,
+                            size = 6,
+                            label.size = 0,
+                            segment.color = NA
+  ) +
+  geom_point() +
+  theme(legend.position = "none")
+
+label <- mpg %>%
+  summarise(
+    displ = max(displ),
+    hwy = max(hwy),
+    label = "Increasing engine size is \nrelated to decreasing fuel economy."
+  )
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_text(aes(label = label), data = label, vjust = "top", hjust = "right")
+label <- tibble(
+  displ = Inf,
+  hwy = Inf,
+  label = "Increasing engine size is \nrelated to decreasing fuel economy."
+)
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_text(aes(label = label), data = label, vjust = "top", hjust = "right")
+
+# ticks and breaks
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  scale_y_continuous(breaks = seq(15, 40, by = 5))
+# shows when each US president started and ended their term
+presidential %>%
+  mutate(id = 33 + row_number()) %>%
+  ggplot(aes(start, id)) +
+  geom_point() +
+  geom_segment(aes(xend = end, yend = id)) +
+  scale_x_date(NULL, breaks = presidential$start, date_labels = "'%y")
+# legends
+base <- ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class))
+
+base + theme(legend.position = "left")
+base + theme(legend.position = "top")
+base + theme(legend.position = "bottom")
+base + theme(legend.position = "right") # the default
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  geom_smooth(se = FALSE) +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 1, override.aes = list(size = 4)))
+# different shapes
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = drv, shape = drv)) +
+  scale_colour_brewer(palette = "Set1")
+# color
+presidential %>%
+  mutate(id = 33 + row_number()) %>%
+  ggplot(aes(start, id, colour = party)) +
+  geom_point() +
+  geom_segment(aes(xend = end, yend = id)) +
+  scale_colour_manual(values = c(Republican = "red", Democratic = "blue"))
+# gradients
+df <- tibble(
+  x = rnorm(10000),
+  y = rnorm(10000)
+)
+ggplot(df, aes(x, y)) +
+  geom_hex() +
+  coord_fixed()
+
+ggplot(df, aes(x, y)) +
+  geom_hex() +
+  viridis::scale_fill_viridis() +
+  coord_fixed()
+# zooming
+ggplot(mpg, mapping = aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth() +
+  coord_cartesian(xlim = c(5, 7), ylim = c(10, 30))
+
+mpg %>%
+  filter(displ >= 5, displ <= 7, hwy >= 10, hwy <= 30) %>%
+  ggplot(aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth()
+
+suv <- mpg %>% filter(class == "suv")
+compact <- mpg %>% filter(class == "compact")
+
+ggplot(suv, aes(displ, hwy, colour = drv)) +
+  geom_point()
+
+ggplot(compact, aes(displ, hwy, colour = drv)) +
+  geom_point()
+# share scales across multiple plots
+x_scale <- scale_x_continuous(limits = range(mpg$displ))
+y_scale <- scale_y_continuous(limits = range(mpg$hwy))
+col_scale <- scale_colour_discrete(limits = unique(mpg$drv))
+
+ggplot(suv, aes(displ, hwy, colour = drv)) +
+  geom_point() +
+  x_scale +
+  y_scale +
+  col_scale
+
+ggplot(compact, aes(displ, hwy, colour = drv)) +
+  geom_point() +
+  x_scale +
+  y_scale +
+  col_scale
+
+# themes
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth(se = FALSE) +
+  theme_bw()
