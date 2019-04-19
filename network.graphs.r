@@ -11,6 +11,14 @@ letters <- read_csv("Data/Datasets/Social Media/correspondence-data-1585.csv")
 
 letters
 
+
+# # A tibble: 114 x 4
+# writer                  source  destination date      
+# <chr>                   <chr>   <chr>       <date>    
+# 1 Meulen, Andries van der Antwerp Delft       1585-01-03
+# 2 Meulen, Andries van der Antwerp Haarlem     1585-01-09
+
+
 sources <- letters %>%
   distinct(source) %>%
   rename(label = source)
