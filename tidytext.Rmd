@@ -1,0 +1,95 @@
+---
+author: "Gregory S Davis"
+date: "05/04/2019"
+output: tuftesque2::tuftesque
+---
+
+```{r}
+
+library(tidytext)
+library(tidyverse)
+library(tuftesque2)
+library(sentimentr)
+data("hotel_reviews")
+hotel_reviews
+
+```
+```{r}
+hotel_reviews %>%
+    unnest_tokens(word, text)
+hotel_reviews <- rownames_to_column(hotel_reviews, var = "doc_id")
+
+```
+
+```{r}
+library(tm)
+df_source <- DataframeSource(hotel_reviews)
+df_corpus <- VCorpus(df_source)
+dtm <- DocumentTermMatrix(df_corpus)
+as.matrix(dtm)[1:10, 1:7]
+```
+```{r}
+hotel_reviews %>%
+    unnest_tokens(word, text) %>% 
+    anti_join(stop_words)
+```
+```{r}
+hotel_reviews%>%
+    unnest_tokens(word, text) %>% 
+    anti_join(stop_words) %>% 
+    count(word, sort = TRUE)
+```
+```{r}
+hotel_reviews %>%
+    unnest_tokens(word, text) %>% 
+    anti_join(stop_words) %>% 
+    group_by(word) %>%
+    count(sort = TRUE) %>%
+    ungroup() %>%
+    top_n(10) %>%
+    ggplot(aes(x = fct_reorder(word, n), y = n)) +
+    geom_bar(stat = "identity", width = 0.5) + 
+    xlab(NULL) +
+    coord_flip() +
+    ylab("Word Frequency") +
+    ggtitle("Most Common Corpus Words") +
+    theme(legend.position = "none")
+```
+```{r}
+hotel_reviews %>%
+    unnest_tokens(word, text) %>% 
+    anti_join(stop_words) %>% 
+    inner_join(get_sentiments("bing"), by = "word")
+```
+```{r}
+hotel_reviews %>%
+    #mutate(doc_id = strptime(doc_id, "%b %Y"))
+    #mutate(doc_id = lubridate::as_date(doc_id, "%b %Y"))
+    #mutate(doc_id = as.Date(doc_id, "%b %Y"))
+    # (doc_id = zoo::as.yearmon(doc_id) %>% as.POSIXct %>% as.Date) %>% 
+    #mutate(doc_id = zoo::as.yearmon(doc_id, "%B %Y") %>% as.Date(.)) %>% 
+    unnest_tokens(word, text) %>% 
+    anti_join(stop_words) %>% 
+    inner_join(get_sentiments("bing"), by = "word") %>%
+    count(doc_id, sentiment.y) %>%
+    spread(sentiment.y, n) %>%
+    mutate(ratio = positive / negative) %>%
+    ggplot(aes(x = doc_id, y = ratio)) +
+    geom_hline(yintercept = 1, color = "white", size = 2) +
+    geom_point(size = 1) +
+    geom_smooth() +
+    scale_y_log10("Ratio of Positive to Negative Words (Log Scale)", 
+                  breaks = c(1, 2, 4, 6)) +
+    ggtitle("Sentiment Analysis of Radio Addresses Over Time")
+```
+```{r}
+hotel_reviews %>%
+    unnest_tokens(word, text) %>% 
+    group_by(doc_id) %>% 
+    count(word) %>%
+    group_by(doc_id) %>% 
+    mutate(speech_sum = sum(n)) %>%
+    bind_tf_idf(word, speech_sum, n) %>% 
+    arrange(desc(tf_idf))
+```
+
