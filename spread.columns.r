@@ -14,3 +14,9 @@ df %>%
 library(data.table) ## v >= 1.9.6
 dcast(setDT(df), month ~ student, value.var = c("A", "B")) 
 
+# try adding an id
+
+df2 <- df %>%
+  mutate(id = row.names(df))
+
+dcast(setDT(df2), id ~ student, value.var = c("A", "B"))
