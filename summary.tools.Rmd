@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(summarytools)
+data("tobacco")
+print(dfSummary(tobacco), method = "render")
+
+```
+```{r}
+descr(tobacco$BMI)
+```
+
+```{r}
+descr(tobacco$BMI, weights = tobacco$samp.wgts)
+```
+```{r}
+freq(tobacco$disease, weights = tobacco$samp.wgts)
+```
+
+```{r}
+print(
+  ctable(tobacco$disease, tobacco$gender, weights = tobacco$samp.wgts),
+  method = "render"
+)
+```
+
