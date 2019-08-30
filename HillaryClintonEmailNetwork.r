@@ -54,3 +54,7 @@ gg
 svgPanZoom(svgPlot(show(gg), height=15, width=15), 
            width="960px",
            controlIconsEnabled=TRUE)
+
+clinton_emails %>% 
+  filter(from != "Hillary Clinton" & to != "Hillary Clinton") %>% 
+  datatable()
