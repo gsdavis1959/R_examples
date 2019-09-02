@@ -36,3 +36,14 @@ ds_summary_stats(data)
 ds_screener(data)
 ds_group_summary(data$category, data$rating)
 ds_freq_table(data$Species)
+
+mean.cars = with(mtcars, sapply(mtcars[c('mpg', 'disp',  'hp')], mean))
+sd.cars = with(mtcars, sapply(mtcars[c('mpg', 'disp',  'hp')], sd)); sd.cars
+n.cars = with(mtcars, sapply(mtcars[c('mpg', 'disp',  'hp')], length)); n.cars
+cbind(n.cars, mean.cars, sd.cars)
+round(cbind(n.cars, mean.cars, sd.cars),2)
+round(with(mtcars, t(sapply(mtcars[c('mpg', 'disp',  'hp')],
+                            function(x) c(n=length(x), avg=mean(x),
+                                          stdev=sd(x))))), 2)
+library(stargazer)
+stargazer(mtcars[c("mpg", "disp",  "hp")], type="text")
