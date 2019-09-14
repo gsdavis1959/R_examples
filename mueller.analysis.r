@@ -1,3 +1,15 @@
+# Open Source Mueller Report
+
+# (CC) 2019 Ian Dennis Miller
+# http://opensourcemuellerreport.com/
+
+# Attribution 3.0 Unported (CC BY 3.0)
+
+# https://creativecommons.org/licenses/by/3.0/
+
+
+
+
 library(tidyverse)
 
 mueller_report <- read_csv("mueller_report.csv")
@@ -110,14 +122,18 @@ ggplot(data = tidy_mueller_count) +
 library(tidyr)
 library(widyr) #Use for pairwise correlation
 library(kableExtra) #Create nicely formatted output tables
-new_sentiments <- sentiments %>% #From the tidytext package
-  filter(lexicon != "loughran") %>% #Remove the finance lexicon
-  mutate( sentiment = ifelse(lexicon == "AFINN" & score >= 0, "positive",
-                             ifelse(lexicon == "AFINN" & score < 0,
-                                    "negative", sentiment))) %>%
-  group_by(lexicon) %>%
-  mutate(words_in_lexicon = n_distinct(word)) %>%
-  ungroup()
+library(textdata)
+
+tidytext::get_sentiments()
+
+new_sentiments <- get_sentiments("afinn")
+names(new_sentiments)[names(new_sentiments) == 'value'] <- 'score'
+new_sentiments <- new_sentiments %>% mutate(lexicon = "afinn", sentiment = ifelse(score >= 0, "positive", "negative"),
+                                            words_in_lexicon = n_distinct((word)))
+
+
+bing_sentiments <- get_sentiments("bing")
+bing_sentiments
 
 
 mueller_sentiments <- left_join(tidy_mueller_count, new_sentiments, by="word") %>%
