@@ -10,3 +10,8 @@ g <- ggplot(mpg, aes(class))
 # Number of cars in each class:
 g + geom_bar()
 g + geom_bar(aes(fill = drv))
+
+# with means
+ggplot(schools_long) + 
+  geom_bar(aes(SCHOOL_YEAR, mean, fill = as.factor(name)), position = "dodge",
+           stat = "summary", fun.y = "mean")
