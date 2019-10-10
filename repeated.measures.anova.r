@@ -3,6 +3,7 @@
 #  Be sure to run this from the beginning because 
 #  otherwise vectors become longer and longer.
 library(car)
+library(multcompView)
 rm(list = ls())
 ##  You want to clear out old variables --with "rm(list = ls())" --
 ##  before building new ones.
@@ -23,6 +24,14 @@ plot(datLong$time, datLong$outcome, pch = c(2,4,6), col = c(3,4,6))
 legend(1, 20, c("same", "different", "control"), col = c(4,6,3),
        text.col = "green4",  pch = c(4, 6, 2),
        bg = 'gray90')
+
+
+model=lm(outcome ~ factor(time), data=datLong)
+ANOVA=aov(model)
+
+TUKEY <- TukeyHSD(ANOVA)
+TUKEY
+
 
 # This code was originally written by Joshua Wiley, in the Psychology Department at UCLA.
 #  Modified for one between and one within for King.dat by dch
