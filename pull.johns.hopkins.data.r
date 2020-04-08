@@ -587,8 +587,10 @@ jhd_countries <- jhd_countries %>%  mutate(country = recode(country,`US` = 'Unit
 
 
 
-for_map <- left_join(jhd_countries, new)
+for_map <- left_join(jhd_countries, new) %>% glimpse()
 
+for_map <- for_map %>% group_by(country) %>% 
+  mutate(all_cases = max(total_cases))
 
 # light grey boundaries
 l <- list(color = toRGB("grey"), width = 0.5)
@@ -602,7 +604,7 @@ g <- list(
 
 fig <- plot_geo(for_map)
 fig <- fig %>% add_trace(
-  z = ~total_cases, color = ~total_cases, colors = 'Blues',
+  z = ~all_cases, color = ~all_cases, colors = 'Blues',
   text = ~country, locations = ~iso3c, marker = list(line = l)
 )
 fig <- fig %>% colorbar(title = 'COVID-19 Total Cases')
