@@ -2,6 +2,7 @@ library(tidyverse)
 library(lubridate)
 library(rvest)
 library(stringdist)
+library(plotly)
 
 # Function to read the raw CSV files. The files are aggregated to the country
 # level and then converted to long format
@@ -184,7 +185,7 @@ suppressPackageStartupMessages({
 })
 
 dta2 <- read_csv(
-  "jh_covid19_data_2020-04-07.csv",
+  "jh_covid19_data_2020-04-18.csv",
   col_types = cols()
 ) %>%
   mutate(date = ymd(date))
@@ -222,7 +223,7 @@ dta2 %>%
 
 lab_notes <- paste0(
   "Data as provided by Johns Hopkins University Center for Systems Science ", 
-  "and Engineering (JHU CSSE)\nand obtained on March 23, 2020. ",
+  "and Engineering (JHU CSSE)\nand obtained on April 12, 2020. ",
   "The sample is limited to countries with at least seven days of positive\n", 
   "event days data. Code and walk-through: https://joachim-gassen.github.io."
 )
@@ -254,7 +255,7 @@ ggplot(df %>% filter (edate_confirmed <= 30),
        aes(x = edate_confirmed, color = country, y = confirmed)) +
   geom_line() +
   labs(
-    title = "Focus on the first month: Confirmed Cases - as of 4/07/2020\n"
+    title = "Focus on the first month: Confirmed Cases - as of 4/18/2020\n"
   ) +
   gg_my_blob
 
@@ -263,7 +264,7 @@ ggplot(df %>% filter (edate_confirmed <= 30),
        aes(x = edate_confirmed, color = country, y = deaths)) +
   geom_line() +
   labs(
-    title = "Focus on the first month: Deaths - as of 4/07/2020\n"
+    title = "Focus on the first month: Deaths - as of 4/18/2020\n"
   ) +
   gg_my_blob
 
@@ -320,7 +321,9 @@ ts_df <- cnty_df %>% select(deaths)
 
 data = ts(ts_df)
 head(data)
+tail(data)
 autoplot(forecast(data))
+
 
 # Fully automated forecasting
 plot(forecast(data))
@@ -328,9 +331,10 @@ plot(forecast(a10))
 plot(forecast(taylor))
 
 # other datasets
-
+# https://www.kaggle.com/nightranger77/covid19-demographic-predictors
 cv19_by_cntry <- read.csv('covid19_by_country.csv', stringsAsFactors = FALSE) %>% glimpse()
 head(cv19_by_cntry)
+tail(cv19_by_cntry)
 cv19_by_cntry <- cv19_by_cntry %>% rename(country = Country) %>% glimpse()
 mstr <- left_join(mstr, cv19_by_cntry, by = 'country')
 
@@ -338,7 +342,7 @@ df_for_model <- select_if(mstr, is.numeric)
 df_for_model <- na.omit(df_for_model) %>% glimpse()
 
 ggplot(df_for_model, aes(x=confirmed, y=deaths)) + geom_point()
-
+ggplot(df_for_model, aes(x=Median.Age, y=deaths)) + geom_point()
 
 predictors <- df_for_model %>% select(deaths,
                                       X2019.Score,
@@ -351,14 +355,14 @@ library(corrplot)
 r <- cor(predictors)
 corrplot(r)
 
-model <- lm(deaths ~ ., data = predictors)
+model <- glm(deaths ~ ., data = predictors)
 summary(model)
-
+names(p)
 p <- predict(model, data = predictors)
-p
+print(p)
 
 compare <- cbind(p, predictors)
-compare
+table(compare)
 ggplot(compare, aes(x=deaths, y=p)) + geom_point()
 
 
@@ -604,12 +608,13 @@ g <- list(
 
 fig <- plot_geo(for_map)
 fig <- fig %>% add_trace(
-  z = ~all_cases, color = ~all_cases, colors = 'Blues',
+  z = ~total_cases, color = ~total_cases, colors = 'Blues',
+  frame = ~date,
   text = ~country, locations = ~iso3c, marker = list(line = l)
 )
 fig <- fig %>% colorbar(title = 'COVID-19 Total Cases')
 fig <- fig %>% layout(
-  title = 'April 7 2020 Global COVID-19',
+  title = 'April 18 2020 Global COVID-19',
   geo = g
 )
 
