@@ -35,3 +35,24 @@ fig2 <- plot_ly(
   marker=list(colorscale='Reds'))
 
 fig2
+
+library(tidyverse)
+library(reshape2)
+
+labels <- c("Eve", "Cain", "Seth", "Enos", "Noam", "Abel", "Awan", "Enoch", "Azura")
+parents <- c("Seth", "Eve", "Eve", "Seth", "Seth", "Eve", "Eve", "Awan", "Eve")
+values <- c('10', '20', '15', '5', '2', '50', '8', '20', '25')
+
+
+
+df <- melt(data.frame(labels,parents, values))
+colnames(df) <- c(labels, parents)
+print(df)
+
+fig <- plot_ly(
+  type="treemap",
+  labels=df$labels,
+  parents=df$parents,
+  values=df$values
+)
+fig
