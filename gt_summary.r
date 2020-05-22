@@ -57,3 +57,13 @@ tbl_summary(trial2, by = trt) %>%
   as_gt(exclude = "tab_footnote") %>%
   gtsummary::tab_spanner(label = gt::md("**Treatment Group**"),
                   columns = gt::starts_with("stat_"))
+
+# save a table
+
+# make model and tbl_regression object
+m_linear <- lm(mpg ~ cyl, data = mtcars)
+t1 <- tbl_regression(m_linear)
+
+# Use function from gt package to save table, after converting to 
+# gt object using as_gt()
+gt::gtsave(as_gt(t1), file = file.path(tempdir(), "temp.png"))
