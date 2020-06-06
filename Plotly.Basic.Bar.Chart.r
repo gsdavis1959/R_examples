@@ -2,8 +2,16 @@ library(tidyverse)
 library(plotly)
 library(RColorBrewer)
 str(mpg)
+
+
+my.colors <- c("#00539B", "#3375AF", "#5C91BF", "#00223F", "#ACC7DE")
+
+
+
+
+diamonds
 # multiple traces (less performant, but more interactive)
-plot_ly(diamonds, x = ~cut, color = ~clarity, colors = brewer.pal(8, "BrBG"))
+plot_ly(diamonds, x = ~color, color = ~cut, colors = my.colors)
 
 # stacked bar chart
 
