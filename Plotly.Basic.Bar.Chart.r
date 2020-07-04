@@ -1,13 +1,22 @@
 library(tidyverse)
 library(plotly)
+library(RColorBrewer)
 str(mpg)
+
+
+my.colors <- c("#00539B", "#3375AF", "#5C91BF", "#00223F", "#ACC7DE")
+
+
+
+
+diamonds
 # multiple traces (less performant, but more interactive)
-plot_ly(diamonds, x = ~cut, color = ~clarity, colors = "Accent")
+plot_ly(diamonds, x = ~color, color = ~cut, colors = my.colors)
 
 # stacked bar chart
 
-fig <- plot_ly(mpg, x = ~manufacturer, y = ~cty, type = 'bar', name = 'City')
-fig <- fig %>% add_trace(y = ~hwy, name = 'Highway')
+fig <- plot_ly(mpg, x = ~manufacturer, y = ~cty, type = 'bar', name = 'City', marker = list(color = "rgb(150, 10, 135)"))
+fig <- fig %>% add_trace(y = ~hwy, name = 'Highway', marker = list(color = "rgb(195, 195, 195)"))
 fig <- fig %>% layout(yaxis = list(title = 'Mile per Gallon'), barmode = 'stack')
 
 fig
