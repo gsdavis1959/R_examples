@@ -1,0 +1,6 @@
+setwd("~/Data/Datasets/")
+require(reshape2)
+df <- read.csv("cast.test.csv", header=TRUE)
+View(df)
+data.wide <- dcast(df, id ~ Category, value.var="Value")
+View(data.wide)

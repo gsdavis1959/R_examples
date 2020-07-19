@@ -1,5 +1,0 @@
-library(DT)
-library(rio)
-install_formats()
-data(iris)
-datatable(iris)

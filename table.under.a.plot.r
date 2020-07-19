@@ -1,6 +1,0 @@
-library(gridExtra)
-data("mtcars")
-mybar <- qplot(mtcars$mpg, geom="bar")
-tbl <- tableGrob(t(summary(mtcars$mpg)))
-grid.newpage()
-grid.arrange(mybar, tbl) 
