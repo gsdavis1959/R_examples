@@ -56,6 +56,8 @@ tbl_reg_4 <-
 tbl_reg_3
 tbl_reg_4
 
+
+
 # printing trial data
 head(trial) %>% knitr::kable()
 
