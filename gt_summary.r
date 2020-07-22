@@ -4,6 +4,58 @@ remotes::install_github("rstudio/gt")
 library(gtsummary)
 library(dplyr)
 
+sm_trial <- trial %>% select(trt, age, response, grade)
+
+head(sm_trial)
+
+tbl_summary_1 <- tbl_summary(sm_trial)
+
+tbl_summary_2 <- sm_trial %>%
+  tbl_summary(by = trt) %>%
+  add_p() %>%
+  add_overall() %>% 
+  bold_labels()
+
+tbl_summary_1
+tbl_summary_2
+
+tbl_summary_3 <- sm_trial %>%
+  tbl_summary(
+    by = trt,
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"), 
+    label = age ~ "Patient Age") %>%
+  add_p(test = all_continuous() ~ "t.test",
+        pvalue_fun = function(x) style_pvalue(x, digits = 2))
+
+
+tbl_summary_3
+
+# regression
+m1 <- glm(response ~ trt + grade + age, 
+          data = trial,
+          family = binomial) 
+
+tbl_reg_1 <- tbl_regression(m1, exponentiate = TRUE)
+tbl_reg_1
+
+library(survival)
+
+tbl_reg_3 <- 
+  coxph(Surv(ttdeath, death) ~ trt + grade + age, 
+        data = trial) %>%
+  tbl_regression(exponentiate = TRUE)
+
+tbl_reg_4 <-
+  tbl_merge(
+    tbls = list(tbl_reg_1, tbl_reg_3), 
+    tab_spanner = c("**Tumor Response**", "**Time to Death**") 
+  ) 
+
+tbl_reg_3
+tbl_reg_4
+
 # printing trial data
 head(trial) %>% knitr::kable()
 
