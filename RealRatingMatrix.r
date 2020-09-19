@@ -1,4 +1,5 @@
 library(recommenderlab)
+library(tidyverse)
 
 m <- matrix(sample(c(NA,0:5),100, replace=TRUE, prob=c(.7,rep(.3/6,6))),
             nrow=10, ncol=10, dimnames = list(
@@ -7,8 +8,15 @@ m <- matrix(sample(c(NA,0:5),100, replace=TRUE, prob=c(.7,rep(.3/6,6))),
             ))
 m
 
+m1 <- read.csv('sample.csv', stringsAsFactors = FALSE)
+m1 <- as.data.frame(m1) %>% print()
+str(m1)
+
+
+m1 <- as.matrix(m1)
+
 ## coerce into a realRatingMAtrix
-r <- as(m, "realRatingMatrix")
+r <- as(m1, "realRatingMatrix")
 r
 
 ## get some information
@@ -41,7 +49,7 @@ rec
 
 getModel(rec)
 
-pre <- predict(rec, r[1:2], n = 10)
+pre <- predict(rec, r[1:9], n = 5)
 pre
 as(pre, "list")
 
