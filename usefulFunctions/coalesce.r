@@ -11,7 +11,7 @@ library(dplyr)
 df <- read.csv('~/Data/Datasets/test-file.csv')
 names(df)
 df %>% 
-  group_by(ï..Name) %>%
+  group_by(?..Name) %>%
   summarise_all(coalesce)
 
 coalesce_all_columns <- function(df, group_vars = NULL) {
@@ -33,7 +33,7 @@ coalesce_all_columns <- function(df, group_vars = NULL) {
 
 
 df %>%
-  group_by(ï..Name) %>%
+  group_by(?..Name) %>%
   do(coalesce_all_columns(.)) %>%
   ungroup()
 #> # A tibble: 9 x 3
@@ -51,8 +51,8 @@ df %>%
 
 
 df %>%
-  group_by(ï..Name) %>%
-  do(coalesce_all_columns(., "ï..Name")) %>%
+  group_by(?..Name) %>%
+  do(coalesce_all_columns(., "?..Name")) %>%
   ungroup()
 #> # A tibble: 9 x 3
 #>   Group Month Value
@@ -66,3 +66,18 @@ df %>%
 #> 7     3 Feb   8    
 #> 8     3 Mar   7    
 #> 9     3 Jun   4
+
+alpha <- c('a',NA,NA)
+bravo <- c(NA,'b', NA)
+cedric <- c(NA, NA,'c')
+dave <-  c(NA,'dave','charlie')  
+
+data <- tibble(alpha,bravo,cedric,dave)
+data
+
+coalesce(alpha, bravo)
+coalesce(alpha, bravo, cedric)
+
+data %>% 
+  select(alpha:cedric) %>% 
+  mutate(newcol = coalesce(alpha, bravo, cedric))
