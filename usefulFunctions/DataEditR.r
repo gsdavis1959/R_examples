@@ -2,5 +2,6 @@ library(DataEditR)
 
 data_edit(mtcars)
 
-data_edit(mtcars,
-          viewer = FALSE)
+# Save output to R object & csv file
+mtcars_new <- data_edit(mtcars,
+                        save_as = "mtcars_new.csv")
