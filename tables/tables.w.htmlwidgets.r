@@ -1,6 +1,8 @@
 # with html widgets
 library(dplyr)
 library(sparkline)
+library(htmlwidgets)
+library(reactable)
 
 data <- chickwts %>%
   group_by(feed) %>%
