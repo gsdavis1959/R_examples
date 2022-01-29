@@ -1,0 +1,6 @@
+# sequence dates
+library(lubridate)
+
+seq(ymd("2010-1-1"), ymd("2015-1-1"), by = "years")
+seq(ymd("2015/1/1"), ymd("2015/12/30"), by = "quarter")
+seq(ymd('2015-09-15'), ymd('2015-09-30'), by = "2 days")
